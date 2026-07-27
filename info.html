@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>BuLLeT Monitor</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:transparent!important;font-family:Inter,sans-serif;overflow:hidden;user-select:none;color:#fff}
+.panel{position:fixed;right:.6vw;top:50%;transform:translateY(-50%);width:17vw;max-height:28vw;background:rgba(0,0,0,.85);border:.12vw solid rgba(0,75,30,.7);border-radius:.2vw;padding:.5vw;display:none;flex-direction:column;box-shadow:0 0 .6vw rgba(0,255,120,.1),inset 0 0 .3vw rgba(0,255,120,.05)}
+.panel.visible{display:flex}
+.header{display:flex;align-items:center;gap:.4vw;padding-bottom:.4vw;border-bottom:.08vw solid rgba(0,75,30,.5);margin-bottom:.4vw;font-size:.7vw;font-weight:600;color:rgb(0,255,120)}
+.header .count{font-size:.55vw;color:#888;margin-left:auto}
+.list{display:flex;flex-direction:column;gap:.25vw;overflow-y:auto;flex:1;max-height:24vw}
+.list::-webkit-scrollbar{width:.2vw;background:transparent}
+.list::-webkit-scrollbar-thumb{background:rgba(0,75,30,.5);border-radius:.2vw}
+.item{display:flex;flex-direction:column;padding:.3vw .4vw;background:rgba(255,255,255,.03);border-radius:.12vw;border-left:.1vw solid rgba(0,255,120,.3);font-size:.55vw}
+.item .top{display:flex;justify-content:space-between;align-items:center}
+.item .name{font-weight:600;color:#fff;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .id{color:rgb(0,255,120);font-size:.5vw}
+.item .badges{display:flex;flex-wrap:wrap;gap:.15vw;margin-top:.15vw}
+.item .badge{font-size:.45vw;padding:.05vw .25vw;border-radius:.08vw;background:rgba(255,0,0,.25);color:#ff6b6b;border:.04vw solid rgba(255,0,0,.3)}
+.item .badge.spectating{background:rgba(255,165,0,.2);color:#ffa500;border-color:rgba(255,165,0,.3)}
+.item .badge.noclip{background:rgba(255,0,0,.3);color:#ff4444;border-color:rgba(255,0,0,.4)}
+.item .badge.freecam{background:rgba(255,0,255,.2);color:#ff44ff;border-color:rgba(255,0,255,.3)}
+.item .badge.invisible{background:rgba(128,0,128,.2);color:#bb66ff;border-color:rgba(128,0,128,.3)}
+.item .badge.flying{background:rgba(0,150,255,.2);color:#66bbff;border-color:rgba(0,150,255,.3)}
+.item .badge.airborne{background:rgba(0,200,200,.15);color:#66dddd;border-color:rgba(0,200,200,.25)}
+.item .badge.underground{background:rgba(139,69,19,.2);color:#cc8844;border-color:rgba(139,69,19,.3)}
+.item .badge.highalt{background:rgba(100,100,255,.15);color:#8888ff;border-color:rgba(100,100,255,.25)}
+.item .badge.nolos{background:rgba(200,200,0,.15);color:#dddd66;border-color:rgba(200,200,0,.25)}
+.item .stats{display:flex;gap:.3vw;margin-top:.1vw;font-size:.45vw;color:#888}
+.empty{text-align:center;padding:1vw;font-size:.6vw;color:#555}
+</style>
+</head>
+<body>
+<div class="panel" id="panel">
+  <div class="header"><i class="fas fa-eye"></i> Monitor <span class="count" id="count">0</span></div>
+  <div class="list" id="list"><div class="empty">No suspicious players detected</div></div>
+</div>
+<script>
+var panel=document.getElementById('panel');
+var list=document.getElementById('list');
+var count=document.getElementById('count');
+
+function showMonitors(monitors){
+  list.innerHTML='';
+  if(!monitors||!monitors.length){
+    list.innerHTML='<div class="empty">No suspicious players detected</div>';
+    count.textContent='0';
+    panel.classList.remove('visible');
+    return;
+  }
+  panel.classList.add('visible');
+  count.textContent=monitors.length;
+  for(var i=0;i<monitors.length;i++){
+    var m=monitors[i];
+    var s=m.status||{};
+    var item=document.createElement('div');
+    item.className='item';
+    var top=document.createElement('div');
+    top.className='top';
+    top.innerHTML='<span class="name">'+(m.name||'Unknown')+'</span><span class="id">['+(m.id||'?')+']</span>';
+    item.appendChild(top);
+    var badges=document.createElement('div');
+    badges.className='badges';
+    var checks={spectating:s.spectating,noclip:s.noclip,freecam:s.freecam,invisible:s.invisible,flying:s.flying,airborne:s.airborne,underground:s.underground,highalt:s.highAltitude,nolos:s.noLos};
+    var labels={spectating:'Spectating',noclip:'NoClip',freecam:'Freecam',invisible:'Invisible',flying:'Flying',airborne:'Airborne',underground:'Underground',highalt:'High Alt',nolos:'No LOS'};
+    for(var k in checks){if(checks[k]){var b=document.createElement('span');b.className='badge '+k;b.textContent=labels[k];badges.appendChild(b);}}
+    item.appendChild(badges);
+    var stats=document.createElement('div');
+    stats.className='stats';
+    stats.textContent='alt:'+(s.altitude||'?')+'m'+(s.distance?' | '+s.distance+'m':'')+(m.ping?' | '+m.ping+'ms':'');
+    item.appendChild(stats);
+    list.appendChild(item);
+  }
+}
+
+window.addEventListener('message',function(e){
+  var data;
+  try{data=typeof e.data==='string'?JSON.parse(e.data):e.data}catch(er){return}
+  if(!data||data.action!=='updateMonitors')return;
+  showMonitors(data.monitors);
+});
+window.parent.postMessage(JSON.stringify({action:'infoReady'}),'*');
+</script>
+</body>
+</html>

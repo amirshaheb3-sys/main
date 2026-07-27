@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>BuLLeT Notifications</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:transparent!important;font-family:Inter,sans-serif;overflow:hidden;user-select:none}
+.NotificationsWrapper{position:fixed;bottom:.6vw;right:.6vw;display:flex;flex-direction:column;gap:.45vw;z-index:9999;pointer-events:none}
+.Notification{position:relative;width:19vw;padding:.75vw .9vw;display:flex;align-items:center;gap:.55vw;pointer-events:auto;background:rgba(0,0,0,.9);border:.12vw solid rgba(0,75,30,.85);box-shadow:0 0 .4vw rgba(0,255,120,.15),inset 0 0 .25vw rgba(0,255,120,.15);border-radius:.15vw;color:#fff;font-family:Inter;opacity:0;transform:translateY(1.2vw) translateX(140%);transition:opacity .25s ease,transform .85s cubic-bezier(.19,1,.22,1)}
+.Notification.enter{opacity:1;transform:translateY(0) translateX(0)}
+.Notification.exit{opacity:0;transform:translateY(1.2vw) translateX(30%)}
+.Notification i{font-size:1.15vw;opacity:.9;flex-shrink:0;color:rgb(0,255,120)}
+.Notification .NotificationTitle{font-size:.78vw;font-weight:700;color:rgb(0,255,120)}
+.Notification .NotificationDesc{font-size:.64vw;color:#e5e5e5;word-break:break-word;line-height:1.2;margin-top:.1vw}
+.Notification .NotificationProgress{position:absolute;left:0;bottom:0;height:.19vw;width:0%;background:linear-gradient(90deg,rgba(0,255,120,1),rgba(0,160,70,1));border-radius:0 0 .15vw .15vw}
+@keyframes progress{0%{width:100%}to{width:0%}}
+</style>
+</head>
+<body>
+<div class="NotificationsWrapper" id="wrapper"></div>
+<script>
+var wrapper=document.getElementById('wrapper');
+window.addEventListener('message',function(e){
+  var data;
+  try{data=typeof e.data==='string'?JSON.parse(e.data):e.data}catch(er){return}
+  if(!data||data.action!=='showNotification')return;
+  var title=data.title||data.type||'BuLLeT';
+  var desc=data.message||data.desc||'';
+  var duration=data.duration||4000;
+  var n=document.createElement('div');
+  n.className='Notification';
+  n.innerHTML='<i class="fas fa-skull"></i><div><div class="NotificationTitle">'+title+'</div><div class="NotificationDesc">'+desc+'</div></div><div class="NotificationProgress"></div>';
+  wrapper.appendChild(n);
+  requestAnimationFrame(function(){n.classList.add('enter');});
+  var p=n.querySelector('.NotificationProgress');
+  p.style.animation='progress '+duration+'ms linear forwards';
+  setTimeout(function(){n.classList.remove('enter');n.classList.add('exit');setTimeout(function(){n.remove()},500)},duration);
+});
+window.parent.postMessage(JSON.stringify({action:'notificationReady'}),'*');
+</script>
+</body>
+</html>
